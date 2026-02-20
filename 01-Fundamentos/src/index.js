@@ -6,7 +6,7 @@
 
 "use strict"; //modo estricto que ayuda a evitar errores comunes, como variables no declaradas}
 
-const s = "hola mundo:))"; //string
+const s = "hola mundo"; //string
 const n = 42; //number
 const b = true;
 let u; //undefined valor no asignado
