@@ -1,93 +1,115 @@
-/**
- * ==========================================
- * CONVERSOR DE UNIDADES (TEMPERATURA / LONGITUD)
- * ==========================================
- */
-
 "use strict";
 
-// ---------- FUNCIONES DE VALIDACIÓN ----------
+const readline = require("readline");
 
-// verificar si es número válido
-function esNumero(valor) {
-  if (valor === "" || valor === " ") return false;
-  return !isNaN(valor) && isFinite(valor);
+// ---------- CONFIG TERMINAL ----------
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+function preguntar(pregunta) {
+  return new Promise(resolve => rl.question(pregunta, resolve));
 }
 
-// categorías de unidades
+// ---------- NORMALIZACIÓN DE UNIDADES ----------
+
+const aliasUnidades = {
+  // Temperatura
+  c: "C",
+  celsius: "C",
+  centigrados: "C",
+  centígrados: "C",
+
+  f: "F",
+  fahrenheit: "F",
+
+  k: "K",
+  kelvin: "K",
+
+  // Longitud
+  m: "m",
+  metro: "m",
+  metros: "m",
+
+  km: "km",
+  kilometro: "km",
+  kilometros: "km",
+  kilómetro: "km",
+  kilómetros: "km",
+
+  cm: "cm",
+  centimetro: "cm",
+  centimetros: "cm",
+  centímetro: "cm",
+  centímetros: "cm"
+};
+
+function normalizarUnidad(unidad) {
+  if (!unidad) return null;
+  return aliasUnidades[unidad.toLowerCase()] || null;
+}
+
+// ---------- VALIDACIÓN ----------
+
+function esNumero(valor) {
+  return !isNaN(valor) && valor !== "" && isFinite(valor);
+}
+
 const temperatura = ["C", "F", "K"];
 const longitud = ["m", "km", "cm"];
 
-// verificar categoría
 function categoriaUnidad(unidad) {
   if (temperatura.includes(unidad)) return "temperatura";
   if (longitud.includes(unidad)) return "longitud";
   return null;
 }
 
-// ---------- CONVERSIONES TEMPERATURA ----------
+// ---------- CONVERSIONES ----------
 
 function convertirTemperatura(valor, from, to) {
 
-  if (from === "C" && to === "F")
-    return (valor * 9 / 5) + 32;
-
-  if (from === "F" && to === "C")
-    return (valor - 32) * 5 / 9;
-
-  if (from === "C" && to === "K")
-    return valor + 273.15;
-
-  if (from === "K" && to === "C")
-    return valor - 273.15;
-
-  if (from === "F" && to === "K")
-    return (valor - 32) * 5 / 9 + 273.15;
-
-  if (from === "K" && to === "F")
-    return (valor - 273.15) * 9 / 5 + 32;
+  if (from === "C" && to === "F") return (valor * 9 / 5) + 32;
+  if (from === "F" && to === "C") return (valor - 32) * 5 / 9;
+  if (from === "C" && to === "K") return valor + 273.15;
+  if (from === "K" && to === "C") return valor - 273.15;
+  if (from === "F" && to === "K") return (valor - 32) * 5 / 9 + 273.15;
+  if (from === "K" && to === "F") return (valor - 273.15) * 9 / 5 + 32;
 
   return valor;
 }
 
-// ---------- CONVERSIONES LONGITUD ----------
-
 function convertirLongitud(valor, from, to) {
 
-  // pasar todo a metros
   let metros;
 
   if (from === "m") metros = valor;
   if (from === "km") metros = valor * 1000;
   if (from === "cm") metros = valor / 100;
 
-  // convertir desde metros
   if (to === "m") return metros;
   if (to === "km") return metros / 1000;
   if (to === "cm") return metros * 100;
-
 }
 
 // ---------- FUNCIÓN PRINCIPAL ----------
 
 function convertir(valor, from, to) {
 
-  // validar número
   if (!esNumero(valor)) {
-    throw new Error("❌ Error: valor inválido");
+    throw new Error("inserta un valor numerico que sea valido");
   }
 
   const catFrom = categoriaUnidad(from);
   const catTo = categoriaUnidad(to);
 
-  // validar unidades
   if (!catFrom || !catTo) {
-    throw new Error("❌ Error: unidad no soportada");
+    throw new Error("Unidad no soportada");
   }
 
-  // validar categorías iguales
   if (catFrom !== catTo) {
-    throw new Error("❌ Error: categorías incompatibles");
+    throw new Error("No se pueden convertir categorías distintas");
   }
 
   let resultado;
@@ -100,33 +122,44 @@ function convertir(valor, from, to) {
     resultado = convertirLongitud(valor, from, to);
   }
 
-  return resultado.toFixed(2); // para los 2 decimales
+  return resultado.toFixed(2);
 }
 
-// ---------- PRUEBAS MANUALES ----------
+// ---------- PROGRAMA INTERACTIVO ----------
 
-function prueba(valor, from, to) {
+async function main() {
   try {
-    const res = convertir(valor, from, to);
-    console.log({valor, from, res, to});
-  } catch (error)
-   {
-    console.log(error.message);
+
+    const valorInput = await preguntar("Ingrese el valor a convertir: ");
+
+    //  VALIDACIÓN DIRECTA AQUÍ
+    if (!esNumero(valorInput)) {
+      console.log("inserta un valor numerico que sea valido");
+      rl.close();
+      return;
+    }
+
+    const unidadOrigenInput = await preguntar("Unidad de origen: ");
+    const unidadDestinoInput = await preguntar("Unidad de destino: ");
+
+    const valor = parseFloat(valorInput);
+
+    const unidadOrigen = normalizarUnidad(unidadOrigenInput);
+    const unidadDestino = normalizarUnidad(unidadDestinoInput);
+
+    if (!unidadOrigen || !unidadDestino) {
+      throw new Error("Unidad escrita no reconocida");
+    }
+
+    const resultado = convertir(valor, unidadOrigen, unidadDestino);
+
+    console.log(`\n Resultado: ${valor} ${unidadOrigen} = ${resultado} ${unidadDestino}`);
+
+  } catch (error) {
+    console.log("\n" + error.message);
+  } finally {
+    rl.close();
   }
 }
 
-console.log("====== PRUEBAS ======");
-
-// criterios del ejercicio
-prueba(100, "C", "F");   // 212.00 F
-prueba(32, "F", "C");    // 0.00 C
-prueba(0, "C", "F");     // 32.00 F
-prueba(-40, "C", "F");   // caso especial
-prueba(1500, "m", "km"); // 1.50 km
-prueba(1.2, "km", "m");  // 1200.00 m
-
-// errores
-prueba("abc", "C", "F");
-prueba(10, "kg", "g");
-prueba(10, "C", "m");
-prueba("", "m", "km");
+main();
